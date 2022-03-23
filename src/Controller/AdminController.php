@@ -6,6 +6,7 @@ use App\Entity\Article;
 use App\Entity\Categorie;
 use App\Entity\User;
 use App\Form\ArticleFormType;
+use App\Form\CategoryFormType;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
@@ -240,4 +241,129 @@ class AdminController extends AbstractController
         return $this->redirectToRoute("show_dashboard");
     }
 
-} // END Class
+    ///////////////////////////////////////////////////////////// CATEGORY //////////////////////////////////////////////////////////////////
+
+
+    /**
+     * @Route("/creer-une-categorie", name="create_category", methods={"GET|POST"})
+     */
+    public function createCategory( EntityManagerInterface $entityManager, Request $request, SluggerInterface $slugger) : Response   
+    {
+        $categorie = new Categorie;
+
+        $form = $this->createForm(CategoryFormType::class, $categorie)
+            ->handleRequest($request);
+
+            if($form->isSubmitted() && $form->isValid()) {
+
+                $categorie->setAlias($slugger->slug($categorie->getName() ) );
+
+                // Il y a une autre façon de procéder pour setter ces propriétés de Categorie
+                 # Voir Categorie Entity __construct()
+                // $categorie->setCreatedAt(new DateTime());
+                // $categorie->setUpdatedAt(new DateTime());
+
+                $entityManager->persist($categorie);
+                $entityManager->flush();
+
+                $this->addFlash('success', "Vous avez ajouté la catégorie ".$categorie->getName()." avec succès");
+
+                return $this->redirectToRoute('show_dashboard');
+                
+
+
+            } // END $form()
+
+            return $this->render('admin/form/form_categorie.html.twig', [
+                'form' => $form->createView()
+            ]);
+
+        }
+
+    /**
+     * @Route("/modifier-une-categorie/{id}", name="update_category", methods={"GET|POST"})
+     * L'action est exécutée 2x et accessible par les deux méthods (GET|POST)
+     */
+    public function updateCategorie(Categorie $categorie, Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
+    {
+       
+        $oldCategoryName = $categorie->getName();
+
+        
+        $form = $this->createForm(CategoryFormType::class, $categorie)
+        ->handleRequest($request);
+
+
+        
+        if($form->isSubmitted() && $form->isValid()) {
+
+            $categorie->setAlias($slugger->slug($categorie->getName()));
+            $categorie->setUpdatedAt(new DateTime());
+
+            $entityManager->persist($categorie);
+            $entityManager->flush();
+
+            $this->addFlash('success', "La catégorie '<strong>". $oldCategoryName ."</strong>' à bien été modifié !");
+ 
+            return $this->redirectToRoute("show_dashboard");
+        } // END if($form)
+
+        return $this->render('admin/form/form_categorie.html.twig', [
+            'form' => $form->createView(),
+            'categorie' => $categorie
+        ]);
+    }
+
+    /**
+     * @Route("/archiver-une-categorie/{id}", name="soft_delete_category", methods={"GET"})
+     */
+    public function softDeleteCategorie(Categorie $categorie, EntityManagerInterface $entityManager): Response
+    {
+        # On set la propriété deletedAt pour archiver la catégorie.
+            # De l'autre coté on affichera les catégories où deletedAt === null
+        $categorie->setDeletedAt(new DateTime());
+
+        $entityManager->persist($categorie);
+        $entityManager->flush();
+
+        $this->addFlash('success', "La catégorie ". $categorie->getName() ." a bien été archivée");
+
+        return $this->redirectToRoute('show_dashboard');
+    }
+
+    /**
+     * @Route("/supprimer-une-categorie/{id}", name="hard_delete_category", methods={"GET"})
+     */
+    public function hardDeleteCategorie(Categorie $categorie, EntityManagerInterface $entityManager): Response
+    {
+        $categoryName = $categorie->getName();
+        # Cette méthode supprime une ligne en BDD
+        $entityManager->remove($categorie);
+        $entityManager->flush();
+
+        $this->addFlash('success', "La catégorie". $categorie->getName() ." a bien été supprimé de la base de données");
+
+        return $this->redirectToRoute("show_dashboard");
+    }
+
+    /**
+     * @Route("/restaurer-une-categorie/{id}", name="restore_category", methods={"GET"})
+     */
+    public function restoreCategorie(Categorie $categorie, EntityManagerInterface $entityManager): Response
+    {
+        $categorie->setDeletedAt(null);
+
+        $entityManager->persist($categorie);
+        $entityManager->flush();
+
+        $this->addFlash('success', "La catégorie ". $categorie->getName() ." a bien été restauré");
+
+        return $this->redirectToRoute("show_dashboard");
+    }
+
+            
+} // END CLASS
+        
+
+ 
+

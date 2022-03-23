@@ -2,16 +2,19 @@
 
 namespace App\Entity;
 
-use App\Repository\CategorieRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use DateTime;
+use App\Entity\Article;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\CategorieRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * @ORM\Entity(repositoryClass=CategorieRepository::class)
  */
 class Categorie
 {
+    
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -49,9 +52,19 @@ class Categorie
      */
     private $articles;
 
+    
+    
+    // Fonction magiquee de PHP,il en existe plusieurs.
+    // Ces fonctions sont automatiquement exécutées!
     public function __construct()
     {
         $this->articles = new ArrayCollection();
+
+        // On set les propriétés ici
+        $this->createdAt = new DateTime();
+        $this->updatedAt = new DateTime();
+        
+        
     }
 
     public function getId(): ?int
